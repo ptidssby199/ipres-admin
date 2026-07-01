@@ -228,6 +228,12 @@ select.fm-input:focus,input.fm-input:focus{outline:none;border-color:var(--prima
 #menu-toggle{display:none;align-items:center;justify-content:center;width:38px;height:38px;border-radius:9px;border:1.5px solid var(--border);background:#fff;color:var(--text);cursor:pointer;flex-shrink:0}
 #sidebar-overlay{display:none;position:fixed;inset:0;z-index:99;background:rgba(15,23,42,.4);backdrop-filter:blur(2px)}
 #sidebar-overlay.open{display:block}
+.rekap-gps-status.safe{background:#dcfce7;color:#16a34a;}
+.rekap-gps-status.warning{background:#fef9c3;color:#ca8a04;}
+.rekap-gps-status.danger{background:#fee2e2;color:#dc2626;}
+.foto-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.6));padding:10px 12px;color:#fff;font-size:.75rem;}
+#rekap-foto-masuk img,#rekap-foto-pulang img{width:100%;height:100%;object-fit:cover;}
+#modal-rekap-detail.open{display:flex;}
 </style>
 </head>
 <body>
@@ -648,39 +654,55 @@ select.fm-input:focus,input.fm-input:focus{outline:none;border-color:var(--prima
         </div>
       </div>
       <div class="page-view" id="page-laporan">
-        <div class="card" style="margin-bottom:18px">
-          <div style="display:grid;grid-template-columns:160px 160px 1fr;gap:12px;align-items:end;margin-bottom:14px">
+        <!-- Header gradient -->
+        <div style="background:linear-gradient(135deg,#7c3aed,#5b21b6);border-radius:12px;padding:18px 20px;color:#fff;margin-bottom:16px">
+          <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:3px"><i class="fas fa-chart-bar" style="margin-right:8px"></i>Laporan Rekap Absensi</h2>
+          <p style="font-size:.78rem;opacity:.75;margin:0">Kelola dan ekspor data kehadiran karyawan</p>
+        </div>
+        <!-- Filter -->
+        <div class="card" style="margin-bottom:16px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
             <div>
-              <label style="display:block;font-size:.78rem;font-weight:700;color:var(--text-muted);margin-bottom:6px">Dari Tanggal</label>
-              <input type="date" id="lap-dari" class="fm-input">
+              <div style="font-size:.75rem;font-weight:600;color:var(--text-muted);margin-bottom:5px">Dari Tanggal</div>
+              <input type="date" id="lap-dari" class="fm-input" style="width:100%">
             </div>
             <div>
-              <label style="display:block;font-size:.78rem;font-weight:700;color:var(--text-muted);margin-bottom:6px">Sampai Tanggal</label>
-              <input type="date" id="lap-sampai" class="fm-input">
-            </div>
-            <div>
-              <label style="display:block;font-size:.78rem;font-weight:700;color:var(--text-muted);margin-bottom:6px">Cari Nama Karyawan</label>
-              <input type="text" id="lap-nama-filter" class="fm-input" placeholder="Cari nama karyawan..." oninput="filterLaporanTable()">
+              <div style="font-size:.75rem;font-weight:600;color:var(--text-muted);margin-bottom:5px">Sampai Tanggal</div>
+              <input type="date" id="lap-sampai" class="fm-input" style="width:100%">
             </div>
           </div>
-          <div style="display:flex;gap:10px">
-            <button class="btn btn-blue" onclick="loadLaporan()"><i class="fas fa-magnifying-glass"></i> Tampilkan Laporan</button>
-            <button class="btn btn-light" onclick="exportExcel()"><i class="fas fa-file-excel"></i> Export Excel</button>
-            <button class="btn btn-light" onclick="exportHtmlFoto()"><i class="fas fa-images"></i> Export + Foto</button>
+          <input class="fm-input" type="text" id="lap-nama-filter" placeholder="Cari nama karyawan..." oninput="filterLaporanTable()" style="width:100%;margin-bottom:10px">
+          <button style="width:100%;padding:11px;background:#7c3aed;border:none;border-radius:8px;color:#fff;font-family:inherit;font-size:.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:8px" onclick="loadLaporan()"><i class="fas fa-search"></i> Tampilkan Laporan</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-light" style="flex:1" onclick="exportExcel()"><i class="fas fa-file-excel"></i> Export Excel</button>
+            <button class="btn btn-light" style="flex:1" onclick="exportHtmlFoto()"><i class="fas fa-images"></i> Export + Foto</button>
           </div>
         </div>
-
-        <div class="stat-row" id="rekap-stats" style="display:none;grid-template-columns:repeat(5,1fr)">
-          <div class="stat-card"><div class="sv" id="rs-pegawai" style="color:var(--primary)">0</div><div class="sl">Karyawan</div></div>
-          <div class="stat-card"><div class="sv" id="rs-masuk" style="color:var(--green)">0</div><div class="sl">Hadir</div></div>
-          <div class="stat-card"><div class="sv" id="rs-telat" style="color:var(--red)">0</div><div class="sl">Terlambat</div></div>
-          <div class="stat-card"><div class="sv" id="rs-lengkap" style="color:#7c3aed">0</div><div class="sl">Lengkap</div></div>
-          <div class="stat-card"><div class="sv" id="rs-blm-pulang" style="color:var(--yellow)">0</div><div class="sl">Blm Pulang</div></div>
+        <!-- Stat cards -->
+        <div id="rekap-stats" style="display:none;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px">
+          <div style="background:var(--card);border-radius:10px;padding:12px 6px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.05)"><div id="rs-pegawai" style="font-size:1.3rem;font-weight:800;color:var(--primary)">0</div><div style="font-size:.62rem;color:var(--text-muted);font-weight:600;margin-top:2px">Karyawan</div></div>
+          <div style="background:var(--card);border-radius:10px;padding:12px 6px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.05)"><div id="rs-masuk" style="font-size:1.3rem;font-weight:800;color:var(--green)">0</div><div style="font-size:.62rem;color:var(--text-muted);font-weight:600;margin-top:2px">Hadir</div></div>
+          <div style="background:var(--card);border-radius:10px;padding:12px 6px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.05)"><div id="rs-telat" style="font-size:1.3rem;font-weight:800;color:var(--red)">0</div><div style="font-size:.62rem;color:var(--text-muted);font-weight:600;margin-top:2px">Terlambat</div></div>
+          <div style="background:var(--card);border-radius:10px;padding:12px 6px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.05)"><div id="rs-lengkap" style="font-size:1.3rem;font-weight:800;color:#7c3aed">0</div><div style="font-size:.62rem;color:var(--text-muted);font-weight:600;margin-top:2px">Lengkap</div></div>
+          <div style="background:var(--card);border-radius:10px;padding:12px 6px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.05)"><div id="rs-blm-pulang" style="font-size:1.3rem;font-weight:800;color:var(--yellow)">0</div><div style="font-size:.62rem;color:var(--text-muted);font-weight:600;margin-top:2px">Blm Pulang</div></div>
         </div>
-
-        <div class="card" id="rekap-table-wrap" style="display:none;overflow-x:auto">
-          <table class="data-table" id="rekap-table">
-            <thead><tr><th>No</th><th>Nama</th><th>Tanggal</th><th>Shift</th><th>Batas Masuk</th><th>Masuk</th><th>Terlambat</th><th>Pulang</th><th>Durasi</th><th>Status</th><th>Bukti</th><th>Aksi</th></tr></thead>
+        <!-- Tabel rekap -->
+        <div id="rekap-table-wrap" style="display:none;background:var(--card);border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05);overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:.78rem;min-width:520px" id="rekap-table">
+            <thead><tr>
+              <th style="background:#7c3aed;color:#fff;padding:10px 8px;text-align:left;font-weight:700;font-size:.72rem;white-space:nowrap">No</th>
+              <th style="background:#7c3aed;color:#fff;padding:10px 8px;text-align:left;font-weight:700;font-size:.72rem;white-space:nowrap">Nama</th>
+              <th style="background:#7c3aed;color:#fff;padding:10px 8px;text-align:left;font-weight:700;font-size:.72rem;white-space:nowrap">Tanggal</th>
+              <th style="background:#7c3aed;color:#fff;padding:10px 8px;text-align:left;font-weight:700;font-size:.72rem;white-space:nowrap">Shift</th>
+              <th style="background:#7c3aed;color:#fff;padding:10px 8px;text-align:left;font-weight:700;font-size:.72rem;white-space:nowrap">Batas Masuk</th>
+              <th style="background:#7c3aed;color:#fff;padding:10px 8px;text-align:left;font-weight:700;font-size:.72rem;white-space:nowrap">Masuk</th>
+              <th style="background:#7c3aed;color:#fff;padding:10px 8px;text-align:left;font-weight:700;font-size:.72rem;white-space:nowrap">Terlambat</th>
+              <th style="background:#7c3aed;color:#fff;padding:10px 8px;text-align:left;font-weight:700;font-size:.72rem;white-space:nowrap">Pulang</th>
+              <th style="background:#7c3aed;color:#fff;padding:10px 8px;text-align:left;font-weight:700;font-size:.72rem;white-space:nowrap">Durasi</th>
+              <th style="background:#7c3aed;color:#fff;padding:10px 8px;text-align:left;font-weight:700;font-size:.72rem;white-space:nowrap">Status</th>
+              <th style="background:#7c3aed;color:#fff;padding:10px 8px;text-align:left;font-weight:700;font-size:.72rem;white-space:nowrap">Bukti</th>
+              <th style="background:#7c3aed;color:#fff;padding:10px 8px;text-align:left;font-weight:700;font-size:.72rem;white-space:nowrap">Aksi</th>
+            </tr></thead>
             <tbody id="rekap-tbody"></tbody>
           </table>
         </div>
@@ -1055,21 +1077,63 @@ select.fm-input:focus,input.fm-input:focus{outline:none;border-color:var(--prima
 </div>
 
 <!-- MODAL: DETAIL ABSENSI (foto + lokasi) -->
-<div class="modal-overlay" id="modal-rekap-detail">
-  <div class="modal-box" style="max-width:460px">
-    <div class="modal-head">
-      <h3 id="rd-title">Detail Absensi</h3>
-      <button class="modal-close" onclick="tutupDetailModal()"><i class="fas fa-times"></i></button>
+<div id="modal-rekap-detail" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)tutupDetailModal()">
+  <div style="background:var(--card);border-radius:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;animation:fadeScale .25s ease">
+    <div style="background:linear-gradient(135deg,#7c3aed,#5b21b6);padding:16px 20px;border-radius:20px 20px 0 0;display:flex;justify-content:space-between;align-items:center;color:#fff">
+      <h3 id="rekap-detail-title" style="font-size:.95rem;font-weight:700">Detail Absensi</h3>
+      <button onclick="tutupDetailModal()" style="background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem"><i class="fas fa-times"></i></button>
     </div>
-    <div class="modal-body">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-        <div><div style="font-size:.72rem;color:var(--text-muted);font-weight:700">NAMA</div><div id="rd-nama" style="font-weight:700">—</div></div>
-        <div><div style="font-size:.72rem;color:var(--text-muted);font-weight:700">TANGGAL</div><div id="rd-tanggal" style="font-weight:700">—</div></div>
-        <div><div style="font-size:.72rem;color:var(--text-muted);font-weight:700">JAM MASUK</div><div id="rd-masuk" style="font-weight:700;color:var(--green)">—</div></div>
-        <div><div style="font-size:.72rem;color:var(--text-muted);font-weight:700">JAM PULANG</div><div id="rd-pulang" style="font-weight:700;color:var(--accent)">—</div></div>
+    <div style="padding:16px">
+      <!-- GPS Status -->
+      <div id="rekap-gps-status" class="rekap-gps-status safe" style="padding:10px 12px;border-radius:8px;font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:8px;margin-bottom:14px;background:#dcfce7;color:#16a34a">
+        <i class="fas fa-shield-alt"></i><span id="rekap-gps-status-text">GPS Valid</span>
       </div>
-      <div id="rd-foto-wrap" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap"></div>
-      <div id="rd-loc-wrap"></div>
+      <!-- Info Grid -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+        <div style="background:#f8fafc;border-radius:8px;padding:10px 12px"><div style="font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">Nama</div><div id="rd-nama" style="font-size:.85rem;font-weight:700;color:var(--text)">—</div></div>
+        <div style="background:#f8fafc;border-radius:8px;padding:10px 12px"><div style="font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">Tanggal</div><div id="rd-tanggal" style="font-size:.85rem;font-weight:700;color:var(--text)">—</div></div>
+        <div style="background:#f8fafc;border-radius:8px;padding:10px 12px"><div style="font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">Jam Masuk</div><div id="rd-masuk" style="font-size:.85rem;font-weight:700;color:var(--green)">—</div></div>
+        <div style="background:#f8fafc;border-radius:8px;padding:10px 12px"><div style="font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">Jam Pulang</div><div id="rd-pulang" style="font-size:.85rem;font-weight:700;color:var(--accent)">—</div></div>
+        <div style="background:#f8fafc;border-radius:8px;padding:10px 12px"><div style="font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">Akurasi GPS Masuk</div><div id="rd-akurasi" style="font-size:.85rem;font-weight:700;color:var(--text)">—</div></div>
+        <div style="background:#f8fafc;border-radius:8px;padding:10px 12px"><div style="font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">Skor GPS Masuk</div><div id="rd-fakescore" style="font-size:.85rem;font-weight:700">—</div></div>
+      </div>
+      <!-- Koordinat -->
+      <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">📍 Koordinat Lokasi Masuk</div><div id="rd-koordinat" style="font-size:.78rem;font-weight:700;color:var(--text);word-break:break-all">—</div></div>
+      <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;margin-bottom:14px"><div style="font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">📍 Koordinat Lokasi Pulang</div><div id="rd-koordinat-pulang" style="font-size:.78rem;font-weight:700;color:var(--text);word-break:break-all">—</div></div>
+      <!-- GPS Pulang -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+        <div style="background:#f8fafc;border-radius:8px;padding:10px 12px"><div style="font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">Akurasi GPS Pulang</div><div id="rd-akurasi-pulang" style="font-size:.85rem;font-weight:700;color:var(--text)">—</div></div>
+        <div style="background:#f8fafc;border-radius:8px;padding:10px 12px"><div style="font-size:.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px">Skor GPS Pulang</div><div id="rd-fakescore-pulang" style="font-size:.85rem;font-weight:700">—</div></div>
+      </div>
+      <!-- Peta -->
+      <div style="font-size:.78rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px">🗺️ Peta Lokasi Absen</div>
+      <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:6px">
+        <span style="display:inline-flex;align-items:center;gap:4px;margin-right:10px"><span style="width:10px;height:10px;border-radius:50%;background:#16a34a;display:inline-block"></span>Masuk</span>
+        <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#ea580c;display:inline-block"></span>Pulang</span>
+      </div>
+      <div id="rekap-map-detail-wrap" style="width:100%;height:220px;min-height:220px;border-radius:10px;overflow:hidden;border:2px solid var(--border);margin-bottom:14px;background:#f1f5f9;position:relative;z-index:1">
+        <div id="rekap-map-detail" style="width:100%;height:220px;position:absolute;top:0;left:0"></div>
+      </div>
+      <!-- Foto Masuk -->
+      <div style="font-size:.78rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px">📸 Foto Selfie Masuk</div>
+      <div id="rekap-foto-masuk" style="width:100%;border-radius:12px;overflow:hidden;background:#0f172a;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;margin-bottom:14px;position:relative">
+        <div class="no-foto" style="color:rgba(255,255,255,.4);text-align:center;font-size:.85rem"><i class="fas fa-camera" style="font-size:2rem;display:block;margin-bottom:8px;opacity:.4"></i>Foto tidak tersedia</div>
+      </div>
+      <!-- Foto Pulang -->
+      <div style="font-size:.78rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px">📸 Foto Selfie Pulang</div>
+      <div id="rekap-foto-pulang" style="width:100%;border-radius:12px;overflow:hidden;background:#0f172a;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;margin-bottom:14px;position:relative">
+        <div class="no-foto" style="color:rgba(255,255,255,.4);text-align:center;font-size:.85rem"><i class="fas fa-camera" style="font-size:2rem;display:block;margin-bottom:8px;opacity:.4"></i>Foto tidak tersedia</div>
+      </div>
+      <!-- GPS Warnings Masuk -->
+      <div id="rekap-gps-warnings" style="display:none;background:#fee2e2;border-radius:8px;padding:10px 12px;margin-top:10px;font-size:.78rem;color:#dc2626">
+        <div style="font-weight:700;margin-bottom:4px"><i class="fas fa-exclamation-triangle" style="margin-right:5px"></i>Peringatan GPS Masuk</div>
+        <div id="rekap-gps-warnings-list"></div>
+      </div>
+      <!-- GPS Warnings Pulang -->
+      <div id="rekap-gps-warnings-pulang" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 12px;margin-top:8px;font-size:.78rem;color:#ea580c">
+        <div style="font-weight:700;margin-bottom:4px"><i class="fas fa-exclamation-triangle" style="margin-right:5px"></i>Peringatan GPS Pulang</div>
+        <div id="rekap-gps-warnings-pulang-list"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1936,16 +2000,35 @@ function renderLaporanTable(data){
   document.getElementById('laporan-empty').style.display=filtered.length?'none':'block';
   document.getElementById('rekap-stats').style.display=filtered.length?'grid':'none';
   document.getElementById('rekap-table-wrap').style.display=filtered.length?'block':'none';
-  if(!filtered.length){ document.getElementById('laporan-empty').innerHTML='<i class="fas fa-inbox"></i><p>Tidak ada data periode ini</p>'; return; }
+  if(!filtered.length){ document.getElementById('laporan-empty').innerHTML='<i class="fas fa-inbox" style="font-size:2.5rem;display:block;margin-bottom:12px;opacity:.4"></i><p>Tidak ada data periode ini</p>'; return; }
   const grouped={};
   filtered.forEach(r=>{
     const key=(r.uid||'x')+'|'+(r.date||'');
-    if(!grouped[key]) grouped[key]={uid:r.uid,name:r.userName||'—',date:r.date,masuk:'—',pulang:'—',lat:null,lng:null,photoMasuk:null,photoPulang:null,docIdMasuk:'',docIdPulang:''};
-    if(r.type==='masuk'){ grouped[key].masuk=r.time; grouped[key].lat=r.lat; grouped[key].lng=r.lng; grouped[key].photoMasuk=r.photoURL||r.photoBase64||null; grouped[key].docIdMasuk=r.id; }
-    if(r.type==='pulang'){ grouped[key].pulang=r.time; grouped[key].photoPulang=r.photoURL||r.photoBase64||null; grouped[key].docIdPulang=r.id; }
+    if(!grouped[key]) grouped[key]={uid:r.uid,name:r.userName||'—',date:r.date,masuk:'—',pulang:'—',lat:null,lng:null,photoMasuk:null,photoPulang:null,accMasuk:null,fakeScoreMasuk:0,latPulang:null,lngPulang:null,accPulang:null,fakeScorePulang:0,gpsWarnings:[],gpsWarningsPulang:[],izinAutoFill:false,izinJenis:null,absenceType:null,verifMethodMasuk:null,verifMethodPulang:null,docIdMasuk:'',docIdPulang:''};
+    if(r.type==='masuk'){
+      grouped[key].masuk=r.time||'—';
+      grouped[key].lat=r.lat; grouped[key].lng=r.lng;
+      grouped[key].accMasuk=r.accuracy;
+      grouped[key].photoMasuk=r.photoURL||r.photoBase64||null;
+      grouped[key].fakeScoreMasuk=r.fakeGpsScore||0;
+      grouped[key].gpsWarnings=r.gpsWarnings||[];
+      grouped[key].docIdMasuk=r.id;
+      grouped[key].verifMethodMasuk=r.verifMethod||null;
+      if(r.izinAutoFill){ grouped[key].izinAutoFill=true; grouped[key].izinJenis=r.izinJenis||null; grouped[key].absenceType=r.absenceType||null; }
+    }
+    if(r.type==='pulang'){
+      grouped[key].pulang=r.time||'—';
+      grouped[key].photoPulang=r.photoURL||r.photoBase64||null;
+      grouped[key].latPulang=r.lat||null; grouped[key].lngPulang=r.lng||null;
+      grouped[key].accPulang=r.accuracy||null;
+      grouped[key].fakeScorePulang=r.fakeGpsScore||0;
+      grouped[key].gpsWarningsPulang=r.gpsWarnings||[];
+      grouped[key].docIdPulang=r.id;
+      grouped[key].verifMethodPulang=r.verifMethod||null;
+    }
   });
   const rows=Object.values(grouped).sort((a,b)=>a.date>b.date?1:a.date<b.date?-1:0);
-  const telatRows=rows.filter(r=>r.masuk!=='—'&&hitungTelat(r.masuk,r.uid,r.date).telat);
+  const telatRows=rows.filter(r=>{ if(r.masuk==='—'||r.izinAutoFill) return false; return hitungTelat(r.masuk,r.uid,r.date).telat; });
   document.getElementById('rs-pegawai').textContent=new Set(rows.map(r=>r.uid)).size;
   document.getElementById('rs-masuk').textContent=rows.filter(r=>r.masuk!=='—').length;
   document.getElementById('rs-telat').textContent=telatRows.length;
@@ -1956,70 +2039,147 @@ function renderLaporanTable(data){
     const d=new Date(r.date||'');
     const tgl=isNaN(d)?r.date:d.getDate()+' '+M[d.getMonth()]+' '+d.getFullYear();
     let dur='—';
-    if(r.masuk!=='—'&&r.pulang!=='—'){ const[mh,mm]=r.masuk.split(':').map(Number),[ph,pm]=r.pulang.split(':').map(Number),mn=(ph*60+pm)-(mh*60+mm); if(mn>0) dur=Math.floor(mn/60)+'j '+(mn%60)+'m'; }
-    const t=r.masuk!=='—'?hitungTelat(r.masuk,r.uid,r.date):null;
-    const telatBadge=!t?'—':t.telat?'<span class="badge badge-red">+'+t.display+'</span>':'<span class="badge badge-green">Tepat Waktu</span>';
-    const st=r.masuk==='—'?'<span class="badge badge-gray">Tidak Hadir</span>':r.pulang==='—'?'<span class="badge" style="background:var(--yellow-light);color:var(--yellow)">Belum Pulang</span>':'<span class="badge badge-green">Hadir</span>';
-    const shiftNama=t?t.shiftNama:'—';
-    const batasMasuk=t?t.batas:'—';
-    const hasPhoto=r.photoMasuk||r.photoPulang;
-    const hasLoc=r.lat&&r.lng;
+    if(!r.izinAutoFill&&r.masuk!=='—'&&r.pulang!=='—'){ const[mh,mm]=r.masuk.split(':').map(Number),[ph,pm]=r.pulang.split(':').map(Number),mn=(ph*60+pm)-(mh*60+mm); if(mn>0) dur=Math.floor(mn/60)+'j '+(mn%60)+'m'; }
+    const t=(!r.izinAutoFill&&r.masuk!=='—')?hitungTelat(r.masuk,r.uid,r.date):null;
+    const telatBadge=r.izinAutoFill?'—':!t?'—':t.telat?'<span style="padding:3px 7px;background:#fee2e2;color:#dc2626;border-radius:5px;font-size:.72rem;font-weight:700">+'+t.display+'</span>':'<span style="padding:3px 7px;background:#dcfce7;color:#16a34a;border-radius:5px;font-size:.72rem;font-weight:700">Tepat Waktu</span>';
+    const st=r.izinAutoFill
+      ?`<span style="padding:4px 7px;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;border-radius:5px;font-size:.72rem;font-weight:700;display:inline-flex;flex-direction:column;gap:1px" title="${r.absenceType||''}"><span><i class="fas fa-file-medical" style="margin-right:3px"></i>${r.izinJenis||'Izin'}</span>${r.absenceType?'<span style="font-size:.6rem;opacity:.8">'+r.absenceType+'</span>':''}</span>`
+      :r.masuk==='—'?'<span style="padding:3px 7px;background:#f1f5f9;color:#64748b;border-radius:5px;font-size:.72rem;font-weight:700">Tidak Hadir</span>'
+      :r.pulang==='—'?'<span style="padding:3px 7px;background:#fef9c3;color:#ca8a04;border-radius:5px;font-size:.72rem;font-weight:700">Belum Pulang</span>'
+      :'<span style="padding:3px 7px;background:#dcfce7;color:#16a34a;border-radius:5px;font-size:.72rem;font-weight:700">Hadir</span>';
+    const shiftNama=r.izinAutoFill?'—':(t?t.shiftNama:'—');
+    const batasMasuk=r.izinAutoFill?'—':(t?t.batas:'—');
+    const masukDisplay=r.izinAutoFill?'—':(r.masuk||'—');
+    const pulangDisplay=r.izinAutoFill?'—':(r.pulang||'—');
     const safeUid=r.uid?r.uid.replace(/'/g,''):'';
     const safeDate=r.date?r.date.replace(/'/g,''):'';
-    const buktiHtml=(hasPhoto?'<button class="btn btn-light" style="padding:5px 9px;font-size:.7rem" onclick="lihatDetail(this)" data-uid="'+safeUid+'" data-date="'+safeDate+'"><i class="fas fa-camera"></i> Foto</button> ':'')
-      +(hasLoc?'<a class="btn btn-ghost" style="padding:5px 9px;font-size:.7rem" target="_blank" href="https://www.google.com/maps?q='+r.lat+','+r.lng+'"><i class="fas fa-location-dot"></i> Peta</a>':'')
-      ||'<span style="color:var(--text-muted);font-size:.72rem">—</span>';
-    return '<tr>'
-      +'<td>'+(i+1)+'</td>'
-      +'<td style="font-weight:700;white-space:nowrap">'+r.name+'</td>'
-      +'<td style="white-space:nowrap">'+tgl+'</td>'
-      +'<td style="font-size:.78rem;color:var(--text-muted)">'+shiftNama+'</td>'
-      +'<td style="font-size:.78rem;color:var(--text-muted)">'+batasMasuk+'</td>'
-      +'<td style="color:var(--green);font-weight:700">'+r.masuk+'</td>'
-      +'<td>'+telatBadge+'</td>'
-      +'<td style="color:var(--accent);font-weight:700">'+r.pulang+'</td>'
-      +'<td>'+dur+'</td>'
-      +'<td>'+st+'</td>'
-      +'<td style="min-width:90px">'+buktiHtml+'</td>'
-      +'<td style="white-space:nowrap">'
-        +'<button class="btn btn-light" style="padding:6px 10px;font-size:.72rem;margin-right:4px" onclick="openEditAbsen(this)" '
+    const fakeScore=r.fakeScoreMasuk||0;
+    const fakeLabel=fakeScore>=4?'<span style="padding:2px 6px;background:#fee2e2;border:1px solid #fca5a5;border-radius:4px;color:#dc2626;font-size:.65rem;font-weight:700;display:block;margin-top:3px"><i class="fas fa-exclamation-triangle"></i> Fake GPS</span>':fakeScore>=2?'<span style="padding:2px 6px;background:#fef9c3;border:1px solid #fde68a;border-radius:4px;color:#ca8a04;font-size:.65rem;font-weight:700;display:block;margin-top:3px">⚠️ Mencurigakan</span>':'';
+    const fpMasuk=r.verifMethodMasuk==='fingerprint';
+    const fpPulang=r.verifMethodPulang==='fingerprint';
+    const buktiMasuk=r.photoMasuk
+      ?'<button style="padding:3px 8px;background:#f5f3ff;border:1.5px solid #7c3aed;border-radius:6px;color:#7c3aed;font-size:.68rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:3px" onclick="lihatDetail(this)" data-uid="'+safeUid+'" data-date="'+safeDate+'" data-tab="masuk"><i class="fas fa-camera"></i> Foto Masuk</button>'
+      :fpMasuk?'<span style="padding:2px 7px;background:#e0f2fe;border:1px solid #7dd3fc;border-radius:5px;color:#0369a1;font-size:.65rem;font-weight:700;display:inline-flex;align-items:center;gap:3px"><i class="fas fa-fingerprint"></i> FP Masuk</span>':'';
+    const buktiPulang=r.photoPulang
+      ?'<button style="padding:3px 8px;background:#fff7ed;border:1.5px solid #ea580c;border-radius:6px;color:#ea580c;font-size:.68rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:3px;margin-top:3px" onclick="lihatDetail(this)" data-uid="'+safeUid+'" data-date="'+safeDate+'" data-tab="pulang"><i class="fas fa-camera"></i> Foto Pulang</button>'
+      :fpPulang?'<span style="padding:2px 7px;background:#e0f2fe;border:1px solid #7dd3fc;border-radius:5px;color:#0369a1;font-size:.65rem;font-weight:700;display:inline-flex;align-items:center;gap:3px;margin-top:3px"><i class="fas fa-fingerprint"></i> FP Pulang</span>':'';
+    const hasLoc=r.lat&&r.lng;
+    const petaBtn=hasLoc?'<button style="padding:3px 8px;background:#e0f2fe;border:1.5px solid #0891b2;border-radius:6px;color:#0891b2;font-size:.68rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:3px;margin-top:3px" onclick="lihatDetail(this)" data-uid="'+safeUid+'" data-date="'+safeDate+'" data-tab="lokasi"><i class="fas fa-map-marker-alt"></i> Peta</button>':'';
+    const buktiHtml=r.izinAutoFill?'<span style="color:var(--text-muted);font-size:.72rem">—</span>'
+      :([buktiMasuk,buktiPulang,petaBtn,fakeLabel].filter(Boolean).join(''))||'<span style="color:var(--text-muted);font-size:.72rem">—</span>';
+    return '<tr style="'+(i%2?'background:#fafbff':'')+'">'
+      +'<td style="padding:9px 8px;border-bottom:1px solid var(--border)">'+(i+1)+'</td>'
+      +'<td style="padding:9px 8px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap">'+r.name+'</td>'
+      +'<td style="padding:9px 8px;border-bottom:1px solid var(--border);white-space:nowrap">'+tgl+'</td>'
+      +'<td style="padding:9px 8px;border-bottom:1px solid var(--border);font-size:.72rem;color:var(--text-muted)">'+shiftNama+'</td>'
+      +'<td style="padding:9px 8px;border-bottom:1px solid var(--border);font-size:.75rem;color:var(--text-muted)">'+batasMasuk+'</td>'
+      +'<td style="padding:9px 8px;border-bottom:1px solid var(--border);color:var(--green);font-weight:600">'+masukDisplay+'</td>'
+      +'<td style="padding:9px 8px;border-bottom:1px solid var(--border)">'+telatBadge+'</td>'
+      +'<td style="padding:9px 8px;border-bottom:1px solid var(--border);color:var(--accent);font-weight:600">'+pulangDisplay+'</td>'
+      +'<td style="padding:9px 8px;border-bottom:1px solid var(--border)">'+dur+'</td>'
+      +'<td style="padding:9px 8px;border-bottom:1px solid var(--border)">'+st+'</td>'
+      +'<td style="padding:9px 8px;border-bottom:1px solid var(--border);min-width:80px">'+buktiHtml+'</td>'
+      +'<td style="padding:9px 8px;border-bottom:1px solid var(--border);white-space:nowrap">'
+        +'<button class="btn btn-light" style="padding:5px 9px;font-size:.72rem;margin-right:4px" onclick="openEditAbsen(this)" '
           +'data-uid="'+safeUid+'" data-date="'+safeDate+'" data-name="'+r.name.replace(/"/g,'&quot;')+'" '
           +'data-masuk="'+(r.masuk==='—'?'':r.masuk)+'" data-pulang="'+(r.pulang==='—'?'':r.pulang)+'" '
           +'data-docid-masuk="'+(r.docIdMasuk||'')+'" data-docid-pulang="'+(r.docIdPulang||'')+'">'
           +'<i class="fas fa-pen"></i> Edit</button>'
-        +'<button class="btn btn-ghost" style="padding:6px 10px;font-size:.72rem;color:var(--red);border-color:var(--red)" '
+        +'<button class="btn btn-ghost" style="padding:5px 9px;font-size:.72rem;color:var(--red);border-color:var(--red)" '
           +'onclick="openDeleteAbsen(this)" '
           +'data-uid="'+safeUid+'" data-date="'+safeDate+'" data-name="'+r.name.replace(/"/g,'&quot;')+'" '
           +'data-masuk="'+(r.masuk==='—'?'':r.masuk)+'" data-pulang="'+(r.pulang==='—'?'':r.pulang)+'" '
           +'data-docid-masuk="'+(r.docIdMasuk||'')+'" data-docid-pulang="'+(r.docIdPulang||'')+'">'
           +'<i class="fas fa-trash"></i></button>'
-        +'</td>'
+      +'</td>'
       +'</tr>';
   }).join('');
-  // simpan grouped untuk dipakai modal detail
   rows.forEach(r=>{ currentDetailRows[(r.uid||'x')+'|'+(r.date||'')]=r; });
 }
 
-function lihatDetail(btn){
-  const uid=btn.dataset.uid, date=btn.dataset.date;
-  const r=currentDetailRows[uid+'|'+date];
-  if(!r) return;
-  document.getElementById('rd-nama').textContent=r.name;
-  const d=new Date(date+'T00:00:00');
-  const M=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-  document.getElementById('rd-tanggal').textContent=isNaN(d)?date:d.getDate()+' '+M[d.getMonth()]+' '+d.getFullYear();
-  document.getElementById('rd-masuk').textContent=r.masuk;
-  document.getElementById('rd-pulang').textContent=r.pulang;
-  const fotoWrap=document.getElementById('rd-foto-wrap');
-  let fh='';
-  if(r.photoMasuk) fh+='<div><div style="font-size:.7rem;color:var(--text-muted);margin-bottom:4px;font-weight:700">Foto Masuk</div><img src="'+r.photoMasuk+'" style="width:160px;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--border)"></div>';
-  if(r.photoPulang) fh+='<div><div style="font-size:.7rem;color:var(--text-muted);margin-bottom:4px;font-weight:700">Foto Pulang</div><img src="'+r.photoPulang+'" style="width:160px;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--border)"></div>';
-  fotoWrap.innerHTML=fh||'<p style="color:var(--text-muted);font-size:.82rem">Tidak ada foto</p>';
-  const locWrap=document.getElementById('rd-loc-wrap');
-  locWrap.innerHTML=(r.lat&&r.lng)?'<a class="btn btn-blue" target="_blank" href="https://www.google.com/maps?q='+r.lat+','+r.lng+'"><i class="fas fa-location-dot"></i> Lihat Lokasi di Google Maps</a>':'';
-  document.getElementById('modal-rekap-detail').classList.add('open');
+let detailMapObj=null;
+
+function lihatDetail(btnOrUid, date, tab){
+  let uid, resolvedDate, resolvedTab;
+  if(typeof btnOrUid==='string'){ uid=btnOrUid; resolvedDate=date; resolvedTab=tab; }
+  else { uid=btnOrUid.dataset.uid; resolvedDate=btnOrUid.dataset.date; resolvedTab=btnOrUid.dataset.tab; }
+  date=resolvedDate; tab=resolvedTab;
+  if(!uid||!date){ showToast('Data tidak ditemukan','danger'); return; }
+  const key=uid+'|'+date;
+  if(!currentDetailRows[key]){
+    laporanData.forEach(r=>{
+      const k=(r.uid||'x')+'|'+(r.date||'');
+      if(!currentDetailRows[k]) currentDetailRows[k]={uid:r.uid,name:r.userName||'—',date:r.date,masuk:'—',pulang:'—',lat:null,lng:null,photoMasuk:null,photoPulang:null,accMasuk:null,fakeScoreMasuk:0,gpsWarnings:[],latPulang:null,lngPulang:null,accPulang:null,fakeScorePulang:0,gpsWarningsPulang:[]};
+      if(r.type==='masuk'){ currentDetailRows[k].masuk=r.time; currentDetailRows[k].lat=r.lat; currentDetailRows[k].lng=r.lng; currentDetailRows[k].accMasuk=r.accuracy; currentDetailRows[k].photoMasuk=r.photoURL||r.photoBase64||null; currentDetailRows[k].fakeScoreMasuk=r.fakeGpsScore||0; currentDetailRows[k].gpsWarnings=r.gpsWarnings||[]; }
+      if(r.type==='pulang'){ currentDetailRows[k].pulang=r.time; currentDetailRows[k].photoPulang=r.photoURL||r.photoBase64||null; currentDetailRows[k].latPulang=r.lat||null; currentDetailRows[k].lngPulang=r.lng||null; currentDetailRows[k].accPulang=r.accuracy||null; currentDetailRows[k].fakeScorePulang=r.fakeGpsScore||0; currentDetailRows[k].gpsWarningsPulang=r.gpsWarnings||[]; }
+    });
+  }
+  const row=currentDetailRows[key];
+  if(!row){ showToast('Data tidak ditemukan','danger'); return; }
+  const MB=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  const MF=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const dObj=new Date(date+'T00:00:00');
+  const tgl=isNaN(dObj)?date:dObj.getDate()+' '+MF[dObj.getMonth()]+' '+dObj.getFullYear();
+  document.getElementById('rekap-detail-title').textContent=row.name+' — '+tgl;
+  document.getElementById('rd-nama').textContent=row.name;
+  document.getElementById('rd-tanggal').textContent=tgl;
+  document.getElementById('rd-masuk').textContent=row.masuk||'—';
+  document.getElementById('rd-pulang').textContent=row.pulang||'—';
+  document.getElementById('rd-akurasi').textContent=row.accMasuk?'±'+Math.round(row.accMasuk)+'m':'—';
+  const fakeScore=row.fakeScoreMasuk||0;
+  const fakeEl=document.getElementById('rd-fakescore');
+  fakeEl.textContent=fakeScore+'/10';
+  fakeEl.style.color=fakeScore>=4?'var(--red)':fakeScore>=2?'var(--yellow)':'var(--green)';
+  const gpsEl=document.getElementById('rekap-gps-status'), gpsTxt=document.getElementById('rekap-gps-status-text');
+  if(fakeScore>=4){ gpsEl.className='rekap-gps-status danger'; gpsTxt.innerHTML='<i class="fas fa-shield-alt" style="margin-right:5px"></i>⚠️ Kemungkinan Fake GPS Terdeteksi'; }
+  else if(fakeScore>=2){ gpsEl.className='rekap-gps-status warning'; gpsTxt.innerHTML='<i class="fas fa-exclamation-circle" style="margin-right:5px"></i>Lokasi mencurigakan'; }
+  else { gpsEl.className='rekap-gps-status safe'; gpsTxt.innerHTML='<i class="fas fa-check-circle" style="margin-right:5px"></i>Lokasi GPS valid'; }
+  const coordEl=document.getElementById('rd-koordinat');
+  if(row.lat&&row.lng) coordEl.innerHTML='<a href="https://maps.google.com/?q='+row.lat+','+row.lng+'" target="_blank" style="color:var(--primary);text-decoration:none"><i class="fas fa-external-link-alt" style="margin-right:4px"></i>'+row.lat.toFixed(6)+', '+row.lng.toFixed(6)+'</a>';
+  else coordEl.textContent='—';
+  const coordPEl=document.getElementById('rd-koordinat-pulang');
+  if(coordPEl){ if(row.latPulang&&row.lngPulang) coordPEl.innerHTML='<a href="https://maps.google.com/?q='+row.latPulang+','+row.lngPulang+'" target="_blank" style="color:var(--accent);text-decoration:none"><i class="fas fa-external-link-alt" style="margin-right:4px"></i>'+row.latPulang.toFixed(6)+', '+row.lngPulang.toFixed(6)+'</a>'; else coordPEl.textContent='—'; }
+  const accPEl=document.getElementById('rd-akurasi-pulang'); if(accPEl) accPEl.textContent=row.accPulang?'±'+Math.round(row.accPulang)+'m':'—';
+  const fakePEl=document.getElementById('rd-fakescore-pulang'); if(fakePEl){ const fp=row.fakeScorePulang||0; fakePEl.textContent=fp+'/10'; fakePEl.style.color=fp>=4?'var(--red)':fp>=2?'var(--yellow)':'var(--green)'; }
+  const wPD=document.getElementById('rekap-gps-warnings-pulang'), wPL=document.getElementById('rekap-gps-warnings-pulang-list');
+  if(wPD&&wPL){ if(row.gpsWarningsPulang&&row.gpsWarningsPulang.length){ wPD.style.display='block'; wPL.innerHTML=row.gpsWarningsPulang.map(w=>'<div>• '+w+'</div>').join(''); } else wPD.style.display='none'; }
+  const wD=document.getElementById('rekap-gps-warnings'), wL=document.getElementById('rekap-gps-warnings-list');
+  if(row.gpsWarnings&&row.gpsWarnings.length){ wD.style.display='block'; wL.innerHTML=row.gpsWarnings.map(w=>'<div>• '+w+'</div>').join(''); } else wD.style.display='none';
+  const fMasukEl=document.getElementById('rekap-foto-masuk');
+  if(row.photoMasuk) fMasukEl.innerHTML='<img src="'+row.photoMasuk+'" alt="Selfie Masuk" style="width:100%;height:100%;object-fit:cover"><div class="foto-overlay"><i class="fas fa-clock" style="margin-right:4px"></i>Masuk: '+row.masuk+'</div>';
+  else fMasukEl.innerHTML='<div class="no-foto"><i class="fas fa-camera" style="font-size:2rem;display:block;margin-bottom:8px;opacity:.4"></i>Foto masuk tidak tersedia</div>';
+  const fPulangEl=document.getElementById('rekap-foto-pulang');
+  if(row.photoPulang) fPulangEl.innerHTML='<img src="'+row.photoPulang+'" alt="Selfie Pulang" style="width:100%;height:100%;object-fit:cover"><div class="foto-overlay"><i class="fas fa-clock" style="margin-right:4px"></i>Pulang: '+row.pulang+'</div>';
+  else fPulangEl.innerHTML='<div class="no-foto"><i class="fas fa-camera" style="font-size:2rem;display:block;margin-bottom:8px;opacity:.4"></i>Foto pulang tidak tersedia</div>';
+  const modal=document.getElementById('modal-rekap-detail');
+  modal.style.display=''; modal.classList.add('open');
+  setTimeout(()=>{ const wrap=document.getElementById('rekap-map-detail-wrap'); if(wrap) wrap.scrollIntoView({block:'nearest'}); initDetailMap(row.lat,row.lng,row.name,row.masuk,row.latPulang,row.lngPulang,row.pulang); },400);
 }
-function tutupDetailModal(){ document.getElementById('modal-rekap-detail').classList.remove('open'); }
+
+function initDetailMap(lat,lng,name,timeMasuk,latPulang,lngPulang,timePulang){
+  const hasIn=lat&&lng, hasOut=latPulang&&lngPulang;
+  if(!hasIn&&!hasOut){ document.getElementById('rekap-map-detail').innerHTML='<div style="background:#f1f5f9;border-radius:10px;height:200px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:.85rem"><i class="fas fa-map-marker-alt" style="margin-right:6px"></i>Data lokasi tidak tersedia</div>'; return; }
+  if(detailMapObj){ detailMapObj.remove(); detailMapObj=null; }
+  const mapContainer=document.getElementById('rekap-map-detail'), mapWrap=document.getElementById('rekap-map-detail-wrap');
+  mapContainer.style.width='100%'; mapContainer.style.height='220px'; mapContainer.innerHTML='';
+  if(mapWrap){ mapWrap.style.height='220px'; mapWrap.style.minHeight='220px'; }
+  const centerLat=hasIn?lat:latPulang, centerLng=hasIn?lng:lngPulang;
+  detailMapObj=L.map('rekap-map-detail',{zoomControl:true,attributionControl:true,preferCanvas:true});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{subdomains:['a','b','c'],maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(detailMapObj);
+  detailMapObj.setView([centerLat,centerLng],17);
+  if(hasIn){ const mIn=L.circleMarker([lat,lng],{radius:12,color:'#16a34a',fillColor:'#16a34a',fillOpacity:.85,weight:3}).addTo(detailMapObj); mIn.bindPopup('<b>🟢 Masuk: '+(timeMasuk||'—')+'</b><br>'+name); }
+  if(hasOut){ const mOut=L.circleMarker([latPulang,lngPulang],{radius:12,color:'#ea580c',fillColor:'#ea580c',fillOpacity:.85,weight:3}).addTo(detailMapObj); mOut.bindPopup('<b>🟠 Pulang: '+(timePulang||'—')+'</b><br>'+name); }
+  if(hasIn&&hasOut) L.polyline([[lat,lng],[latPulang,lngPulang]],{color:'#64748b',weight:2,dashArray:'6'}).addTo(detailMapObj);
+  if(officeConfig){ L.circle([officeConfig.lat,officeConfig.lng],{radius:officeConfig.radius,color:'#0891b2',fillColor:'#e0f2fe',fillOpacity:.2,weight:2,dashArray:'5'}).addTo(detailMapObj); L.circleMarker([officeConfig.lat,officeConfig.lng],{radius:8,color:'#0891b2',fillColor:'#0891b2',fillOpacity:1}).addTo(detailMapObj).bindPopup('<b>📍 '+(officeConfig.nama||'Kantor')+'</b>'); }
+  if(hasIn&&hasOut){ const bounds=L.latLngBounds([[lat,lng],[latPulang,lngPulang]]); detailMapObj.fitBounds(bounds.pad(0.4)); }
+  detailMapObj.whenReady(()=>{ detailMapObj.invalidateSize(); setTimeout(()=>{ if(detailMapObj) detailMapObj.invalidateSize(); },300); setTimeout(()=>{ if(detailMapObj) detailMapObj.invalidateSize(); },700); });
+  detailMapObj.invalidateSize();
+}
+
+function tutupDetailModal(){
+  document.getElementById('modal-rekap-detail').classList.remove('open');
+  if(detailMapObj){ detailMapObj.remove(); detailMapObj=null; }
+}
 
 // ---- EDIT ABSENSI MANUAL ----
 let editAbsenCtx=null;
