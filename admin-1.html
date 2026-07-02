@@ -233,7 +233,7 @@ select.fm-input:focus,input.fm-input:focus{outline:none;border-color:var(--prima
 .rekap-gps-status.danger{background:#fee2e2;color:#dc2626;}
 .foto-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.6));padding:10px 12px;color:#fff;font-size:.75rem;}
 #rekap-foto-masuk img,#rekap-foto-pulang img{width:100%;height:100%;object-fit:cover;}
-#modal-rekap-detail.open{display:flex;}
+/* modal-rekap-detail dibuka via style.display */
 </style>
 </head>
 <body>
@@ -2152,7 +2152,7 @@ function lihatDetail(btnOrUid, date, tab){
   if(row.photoPulang) fPulangEl.innerHTML='<img src="'+row.photoPulang+'" alt="Selfie Pulang" style="width:100%;height:100%;object-fit:cover"><div class="foto-overlay"><i class="fas fa-clock" style="margin-right:4px"></i>Pulang: '+row.pulang+'</div>';
   else fPulangEl.innerHTML='<div class="no-foto"><i class="fas fa-camera" style="font-size:2rem;display:block;margin-bottom:8px;opacity:.4"></i>Foto pulang tidak tersedia</div>';
   const modal=document.getElementById('modal-rekap-detail');
-  modal.style.display=''; modal.classList.add('open');
+  modal.style.display='flex';
   setTimeout(()=>{ const wrap=document.getElementById('rekap-map-detail-wrap'); if(wrap) wrap.scrollIntoView({block:'nearest'}); initDetailMap(row.lat,row.lng,row.name,row.masuk,row.latPulang,row.lngPulang,row.pulang); },400);
 }
 
@@ -2177,7 +2177,8 @@ function initDetailMap(lat,lng,name,timeMasuk,latPulang,lngPulang,timePulang){
 }
 
 function tutupDetailModal(){
-  document.getElementById('modal-rekap-detail').classList.remove('open');
+  const modal=document.getElementById('modal-rekap-detail');
+  modal.style.display='none';
   if(detailMapObj){ detailMapObj.remove(); detailMapObj=null; }
 }
 
